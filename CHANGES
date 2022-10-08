@@ -1,0 +1,16 @@
+Removed the use of libstrifc.a from triptych and just used the necessary source
+code from http://astronomy.swin.edu.au/~jhurley/bsedload.html in its place.
+The code now compiles with gfortran (use "make -f makefile").
+
+On line 20 of triptych.f there is a "verbosity" parameter that is set to 1.
+This controls how much output is printed to the screen.  If you ever want to
+see more text, including some comments originally meant for debugging purposes,
+set vebosity=2 and recompile.
+
+When transitioning from the hydrodynamics to the evolution, the evolution is
+initiated by assuming the star is fully mixed during the collision.  The code
+in triptych.f calculates the average helium mass fraction Yinit throughout the
+entire merger product and uses that to initialize the stellar evolution.  This
+isn't ideal because it's ignoring the actual composition profile of the merger
+product, even though that information is available since MMAS is being used.
+
