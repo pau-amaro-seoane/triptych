@@ -80,7 +80,7 @@
       endif
       WRITE(iunit,*)
      $'# 1:Age [Myr] 2:M [M_sun] 3:R [R_sun] 4:Y 5:Z 6:log_10 L [L_sun]'
-     $'7:T_eff [K] 8:type'
+     $,' 7:T_eff [K] 8:type'
 *
 * Evolution loop. 
 * Note that EvolveStar returns recommend values of dtmax, dMmax, and 

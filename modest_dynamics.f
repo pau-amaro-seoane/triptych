@@ -175,9 +175,9 @@ c      write(6,*) 'etot(from args array): ', etot
 C     Print results to file, also calculating the energy and ang. momentum
       if(dump) then
          write(outhandle,'(a128)')
-     $                        '# 1: t [hour]    2:r/(R1+R2)   3:e    
-     $4:alpha [R_sun]  5:l/lunit     6:E/eunit    7:x1 [R_sun]  8:y1 
-     $[R_sun]  9:x2 [R_sun]  10:y2 [R_sun]    11:theta0'
+     $ '# 1: t [hour]    2:r/(R1+R2)   3:e  4:alpha [R_sun]  5:l/lunit'
+     $,' 6:E/eunit    7:x1 [R_sun]  8:y1 [R_sun]  9:x2 [R_sun]  10:y2'
+     $,' [R_sun]    11:theta0'
          do i=1, kount
             call getorbitalelements(i)
             if(vxcm**2+vycm**2.lt.acc*vunit**2 .and.
