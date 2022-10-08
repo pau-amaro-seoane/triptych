@@ -1,0 +1,8 @@
+'m08.mdl'       ! input file for parent star 1
+'m08.mdl'       ! input file for parent star 2
+25              ! relative velocity at infinity, in km/s
+0.5             ! periastron separation (in units of R_1 + R_2)
+5               ! initial separation, normalized to the sum of the parent star radii: separation0/(R_1+R_2)   
+'dynamics.dat'  ! output data file name for dynamics
+'hydro.dat'     ! output data file name for hydrodynamics
+'evolution.dat' ! output data file name for evolution
