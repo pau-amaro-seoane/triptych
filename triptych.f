@@ -141,7 +141,7 @@ c      write(6,*)'NP=',NP
       endif
       OPEN(50,FILE=outfile(2))
       write(50,*)'# 1:m [M_sun] 2:P [dyne/cm^2] 3:rho [g/cm^3]'
-     $           '4:r [R_sun] 5:X 6:Z 7:j [cm^2/s]' 
+     $,           '4:r [R_sun] 5:X 6:Z 7:j [cm^2/s]' 
       do Jr=1,NP
          if(Mproduct(Jr).gt.0.95d0*Mproduct(NP).or.mod(Jr,5).eq.1)
      $        WRITE(50,54) Mproduct(Jr)/1.989d33,Pproduct(Jr),
