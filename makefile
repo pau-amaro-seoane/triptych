@@ -6,7 +6,8 @@ NAME = triptych
 #LFLAGS = sev2/libstrifc.a
 #LFLGS = -Lsev2 -lstrifc
 
-FC= egfortran -w
+#FC= gfortran -w # If on linux
+FC= egfortran -w # If on OpenBSD
 FFILES = triptych.f modest_dynamics.f makemeastar.f modest_evolution.f recipes.f zcnsts.f zfuncs.f star.f hrdiag.f mlwind.f mrenv.f
 
 OBJFILES = $(FFILES:.f=.o)
