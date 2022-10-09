@@ -45,7 +45,8 @@
 * 
 ************************************************************************
 *
-      SUBROUTINE one_star(m_init,r_init,Y_init,Z_init,outfile)
+      SUBROUTINE one_star(moverall,roverall,Yoverall,Zoverall,outfile,
+     $     X_c,Z_c,X_cinit,Z_cinit)
 *
       implicit none
       include "modest_common.h"
@@ -54,11 +55,17 @@
       character*70 outfile
       real*8 time,mass,radius,y,z,loglum,teff
       real*8 oldtime,oldmass,oldradius,oldy,oldz,oldloglum,oldteff
+      real*8 X_c,Y_c,Z_c,age0
+      real*8 X_cinit,Y_cinit,Z_cinit
+      common/ageinit/age0
 *
 * Allocate a reference id for the star and initialize stellar 
 * quantities required by EvolveStar. 
 *
-      idstar = CreateStar(m_init,r_init,Y_init,Z_init)
+      Y_c=1-X_c-Z_c
+      Y_cinit=1-X_cinit-Z_cinit
+      idstar = CreateStar(moverall,roverall,Yoverall,Zoverall,Y_c,Z_c,
+     $     Y_cinit,Z_cinit)
       if(idstar.lt.0)then
          WRITE(6,*)' ERROR: star index not found'
          RETURN
@@ -90,6 +97,15 @@
 * 
       iteration=0
       kw=0
+!     Write initial data (that is, from immediately following the merger)
+!     to the evolution output file.  Note: the luminosity and
+!     effective temperature are changing quickly and not easily calculated.
+!     We list their values as log(L/Lsun)=0 and Teff=0 to indicate
+!     that we haven't tried.
+      WRITE(iunit,600) age(idstar)-age0,getMass(idstar),
+     $     getRadius(idstar),
+     $     getY(idstar),getZ(idstar),0d0,0d0,
+     $     getType(idstar)
  10   iteration=iteration+1
       dMmax = 0.1d0*getMass(idstar)
       dRmax = .5d0*getRadius(idstar)
@@ -118,7 +134,7 @@
       kw=getType(idstar)
 
       if(iteration.gt.1 .and. kwold.ne.kw) then
-         WRITE(iunit,600) oldtime,oldmass,oldradius,oldy,oldz,
+         WRITE(iunit,600) oldtime-age0,oldmass,oldradius,oldy,oldz,
      $     oldloglum,oldteff,kwold
       endif
  600  format(3g13.8,1x,2g13.7,1x,2g13.7,1g7.2)
@@ -127,7 +143,7 @@
       if(kwold.ne.kw .and. kw.ge.11) tmax=2.d0*time
 
       if(mod(iteration,10).eq.0 .or. kwold.ne.kw .or. kw.ge.7) then
-         WRITE(iunit,600) time,mass,radius,y,z,
+         WRITE(iunit,600) time-age0,mass,radius,y,z,
      $     loglum,teff,kw
       endif
 *
@@ -190,10 +206,17 @@ c      END
 * "Black Box" starts here. 
 *
 ***
-      FUNCTION CreateStar(m_init,r_init,Y_init,Z_init) 
+      FUNCTION CreateStar(moverall,roverall,Yoverall,Zoverall,Y_c,Z_c,
+     $     Y_cinit,Z_cinit)
+      implicit none
       include "modest_common.h"
       include "modest_star.h"
       integer idstar
+      real*8 mt,tm,z,zpars(20),Y_c,Z_c
+      real*8 tbgbf,thookf,vrotf
+      external tbgbf,thookf,vrotf
+      real*8 age0,Y_cinit,Z_cinit
+      common/ageinit/age0
 *
       idstar = first_unused_star()
       if(idstar.lt.0)then
@@ -203,13 +226,33 @@ c      END
       CreateStar = idstar
 *
       age(idstar) = 0.d0
-      zmass0(idstar) = m_init
+      zmass0(idstar) = moverall
       zmass(idstar) = zmass0(idstar)
-      zinit(idstar) = Z_init
-      yinit(idstar) = Y_init
+      zcurr(idstar) = Zoverall
+      ycurr(idstar) = Yoverall
+      zinit(idstar) = Z_cinit
       is_used(idstar) = 1
-      radius(idstar) = r_init
+      radius(idstar) = roverall
 *
+      z = zinit(idstar)
+      CALL zcnsts(z,zpars)
+      mt = zmass(idstar)
+      kstar(idstar) = 1
+      epoch(idstar) = 0.d0
+      zmassc(idstar) = 0.d0
+      radc(idstar) = 0.d0
+      spin(idstar) = 45.35d0*vrotf(mt)/radius(idstar)
+!     Estimate the MS lifetime for a star of this mass
+      tm = MAX(zpars(8),thookf(zmass0(idstar)))*tbgbf(zmass0(idstar))
+!     Determine effectively how far along the MS this merger product is
+      age(idstar) = (Y_c-Y_cinit)/(1-Z_cinit-Y_cinit)*
+     $     MAX(zpars(8),thookf(zmass0(idstar)))*tbgbf(zmass0(idstar))
+!     Record the initial effective age age0, since this will need to be subtracted off before reporting
+!     results, so that the user sees times that start at 0
+      age0 = age(idstar)
+!     SSE assumes that the overall Y of a star increases by 0.1 when it's on the MS:
+      yinit(idstar) = ycurr(idstar) - age(idstar)/tm*0.1d0
+
       RETURN
       END
 ***
@@ -402,16 +445,16 @@ C      parameter(pts1=0.05,pts2=0.01,pts3=0.02)
       z = zinit(i)
       CALL zcnsts(z,zpars)
 *
-      if(tphys.lt.tiny)then
-         kstar(i) = 1
-         epoch(i) = 0.d0
-         zmassc(i) = 0.d0
-         radius(i) = rzamsf(mt)
-         radc(i) = 0.d0
-         spin(i) = 45.35d0*vrotf(mt)/radius(i)
-         zcurr(i) = zinit(i)
-         ycurr(i) = yinit(i)
-      endif
+c      if(tphys.lt.tiny)then
+c         kstar(i) = 1
+c         epoch(i) = 0.d0
+c         zmassc(i) = 0.d0
+c         radius(i) = rzamsf(mt)
+c         radc(i) = 0.d0
+c         spin(i) = 45.35d0*vrotf(mt)/radius(i)
+c         zcurr(i) = zinit(i)
+c         ycurr(i) = yinit(i)
+c      endif
       mc = zmassc(i)
       r = radius(i)
       ospin = spin(i)

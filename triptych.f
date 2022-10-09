@@ -13,7 +13,7 @@ C     1/9/03
      &     jproduct(NROWS)
       double precision periastron
       CHARACTER*70 parentfile(N), outfile(3)
-      double precision mtest,X_init,Y_init,Z_init, m_init
+      double precision mtest,Xoverall,Yoverall,Zoverall, moverall
       double precision vinfinity,separation0
       integer numproducts,dynamicsdriver
 
@@ -152,41 +152,48 @@ c      write(6,*)'NP=',NP
  54   FORMAT(E14.8,3(1X,E14.8),2F8.5,99(1X,E10.4))
 
       mtest=0.d0
-      X_init=0.5d0*(Mproduct(2)+Mproduct(1))*Elproduct(1,1)
-      Z_init=0.5d0*(Mproduct(2)+Mproduct(1))*Elproduct(2,1)
+      Xoverall=0.5d0*(Mproduct(2)+Mproduct(1))*Elproduct(1,1)
+      Zoverall=0.5d0*(Mproduct(2)+Mproduct(1))*Elproduct(2,1)
       mtest=mtest+0.5d0*(Mproduct(2)+Mproduct(1))
       Do Jr=2,NP-1
-         X_init=X_init+
+         Xoverall=Xoverall+
      $        Elproduct(1,Jr)*0.5d0*(Mproduct(Jr+1)-Mproduct(Jr-1))
-         Z_init=Z_init+
+         Zoverall=Zoverall+
      $        Elproduct(2,Jr)*0.5d0*(Mproduct(Jr+1)-Mproduct(Jr-1))
          mtest=mtest+0.5d0*(Mproduct(Jr+1)-Mproduct(Jr-1))
       enddo
-      X_init=X_init+
+      Xoverall=Xoverall+
      $     Elproduct(1,NP)*0.5d0*(Mproduct(NP)-Mproduct(NP-1))
-      Z_init=Z_init+
+      Zoverall=Zoverall+
      $     Elproduct(2,NP)*0.5d0*(Mproduct(NP)-Mproduct(NP-1))
       mtest=mtest+0.5d0*(Mproduct(NP)-Mproduct(NP-1))
-      X_init=X_init/mtest
-      Z_init=Z_init/mtest
-      Y_init=1.d0-X_init-Z_init
+      Xoverall=Xoverall/mtest
+      Zoverall=Zoverall/mtest
+      Yoverall=1.d0-Xoverall-Zoverall
       if(abs(mtest/Mproduct(NP)-1.d0).gt.1.d-5) then
          write(6,*)'average chemical abundances are likely wrong...'
          stop
       endif
 
-      m_init=Mproduct(NP)/1.989d33
+      moverall=Mproduct(NP)/1.989d33
       if(verbosity.ge.2) then
-         write(6,*) 'Collision Product mass=',m_init
-         write(6,*) 'Average Y=',Y_init
-         write(6,*) 'Average Z=',Z_init
+         write(6,*) 'Collision Product mass=',moverall
+      endif
+      if(verbosity.ge.1) then
+         write(6,'(a,9g13.5)')'Overall Y=',real(Yoverall)
+         write(6,'(a,9g13.5)')'Overall Z=',real(Zoverall)
+         write(6,'(a,9g13.5)')'Central and surface X=',Elproduct(1,1),
+     $        Elproduct(1,NP)
+         write(6,'(a,9g13.5)')'Central and surface Z=',Elproduct(2,1),
+     $        Elproduct(2,NP)
       endif
 
       write(6,*)
       write(6,*) 'EPISODE III: STELLAR EVOLUTION'
       write(6,*) '------------------------------'
-      call one_star(m_init,Rproduct(NP)/6.9598d10,
-     $     Y_init,Z_init,outfile(3))
+      call one_star(moverall,Rproduct(NP)/6.9598d10,
+     $     Yoverall,Zoverall,outfile(3),Elproduct(1,1),Elproduct(2,1),
+     $     Elproduct(1,NP),Elproduct(2,NP))
 
       end
 
@@ -215,7 +222,7 @@ c      write(6,*)'NP=',NP
          endif
          
          OPEN(26,FILE=parentfile(K))
-         
+         read(26,*) ! read past the header line
 * I refers to rows in the input data file.  JJ refers to rows where the
 * enclosed mass M is increasing.   We will throw away any rows where this does
 * not occur.  (Some input files may have truncated the value for the mass at
