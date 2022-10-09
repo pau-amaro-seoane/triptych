@@ -645,6 +645,7 @@ c      endif
                CALL star(kw,mass,mt,tm,tn,tscls,lums,GB,zpars)
                CALL hrdiag(mass,aj,mt,tm,tn,tscls,lums,GB,zpars,
      &                     r,lum,kw,mc,rc,menv,renv,k2)
+               kw=kwold ! To ensure star type isn't immediately changed ---JCL Oct. 9, 2022
                goto 20
             endif
  30         continue
