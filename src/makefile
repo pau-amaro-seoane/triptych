@@ -13,7 +13,7 @@ FFILES = triptych.f modest_dynamics.f makemeastar.f modest_evolution.f recipes.f
 OBJFILES = $(FFILES:.f=.o)
 
 $(NAME):$(OBJFILES) $(LFLAGS)
-	$(FC) -o $(NAME) -O $(OBJFILES) $(LFLGS)
+	$(FC) -o ../bin/$(NAME) -O $(OBJFILES) $(LFLGS)
 
 triptych.o : triptych.f
 modest_dynamics.o : modest_dynamics.f dynamics.h

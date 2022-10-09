@@ -1,2 +1,2 @@
 #!/bin/sh
-../triptych < ./sample_input > ./LOG_triptych.dat
+../bin/triptych < ./sample_input > ./LOG.dat
