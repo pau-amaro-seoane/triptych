@@ -10,8 +10,8 @@
 # can access them directly. After the simulations are complete, the temporary files are removed, but the 
 # symbolic links to the stellar models remain in place.
 #
-# The user specifies the ranges for velocities, periastron separations, and initial separations. 
-# If the user does not input any values, the script takes default values.
+# The user specifies the ranges for velocities, periastron separations, initial separations, and the 
+# stellar models to use. If the user does not input any values, the script takes default values.
 #
 # The simulation is launched using the command:
 #     timeout 3 ../bin/triptych < ./input > ./LOG.dat
@@ -49,7 +49,13 @@ for model in $model_dir/*.mdl; do
 done
 
 # Find all .mdl files in the current directory (linked models)
-models=($(ls *.mdl))
+available_models=($(ls *.mdl))
+
+# List available models
+echo "Available models:"
+for model in "${available_models[@]}"; do
+    echo "  - $(basename $model)"
+done
 
 # Function to prompt for user input with default values
 prompt_with_default() {
@@ -59,6 +65,17 @@ prompt_with_default() {
     # If user provides input, use it; otherwise, use the default value
     echo "${input:-$default}"
 }
+
+# Prompt the user to select models to use
+selected_models=$(prompt_with_default "Enter the models you want to use (comma-separated list or 'all')" "all")
+
+# If the user selects "all", use all available models
+if [ "$selected_models" == "all" ]; then
+    models=("${available_models[@]}")
+else
+    # Otherwise, use only the specified models
+    IFS=',' read -r -a models <<< "$selected_models"
+fi
 
 # Get ranges from the user or use default values
 vel_min=$(prompt_with_default "Enter the minimum velocity (km/s)" "1")
