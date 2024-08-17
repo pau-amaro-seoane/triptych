@@ -77,21 +77,21 @@ df['Core_Density'] = df['Core_Density'].astype(float)
 
 # Pivot table to create a 2D grid for heatmap
 # We will plot Core_Density as a function of Velocity and Periastron
-heatmap_data = df.pivot_table(index='Periastron', columns='Velocity', values='Core_Density', aggfunc=np.mean)
+heatmap_data = df.pivot_table(index='Periastron', columns='Velocity', values='Core_Density', aggfunc="mean")
 
 # Set up LaTeX for rendering
 plt.rc('text', usetex=True)
-plt.rc('font', family='serif', size=14)  # Change 'size' to adjust the global font size
+plt.rc('font', family='serif', size=20)  # Change 'size' to adjust the global font size
 
-# Plot the heatmap without annotations in the cells
+# Plot the heatmap with a homogeneous palette
 plt.figure(figsize=(12, 10))
-sns.heatmap(heatmap_data, cmap="YlGnBu", annot=False, linewidths=.5, 
+sns.heatmap(heatmap_data, cmap="Reds", annot=False, linewidths=0.0,
             cbar_kws={"label": r'$\mathrm{Core\ Density\ (g/cm^3)}$'})  # Simplified LaTeX syntax
 
 # Customize the axes labels with LaTeX and adjustable font size
-plt.title(r'$\mathrm{Core\ density\ as\ a\ function\ of\ velocity\ and\ periapsis distance}$', fontsize=18)
-plt.xlabel(r'$\mathrm{Velocity\ (km/s)}$', fontsize=16)
-plt.ylabel(r'$\mathrm{Periapsis distance\ (R_1\ +\ R_2)}$', fontsize=16)
+plt.title(r'$\rho_c \mathrm{\ as\ a\ function\ of\ velocity\ and\ periapsis\ distance}$', fontsize=24,pad=13)
+plt.xlabel(r'$\mathrm{Velocity\ (km/s)}$', fontsize=24)
+plt.ylabel(r'$\mathrm{Periapsis\ distance\ (R_1\ +\ R_2)}$', fontsize=24)
 
 # Display the plot
 plt.show()
