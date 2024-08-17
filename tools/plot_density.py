@@ -59,21 +59,22 @@ in the script.
 - Axes and Labels: The script can be further customized to plot different parameters by adjusting 
 the pivot table creation or the heatmap plotting sections.
 """
-
 import pandas as pd
-import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
 
-# Load the results file into a DataFrame
+# Define the expected number of columns
+expected_columns = ['Model1', 'Model2', 'Velocity', 'Periastron', 'Initial_Separation', 'Max_Density']
+
+# Load the results file into a DataFrame, skip bad lines
 df = pd.read_csv('./results.txt', delim_whitespace=True, comment='#',
-                 names=['Model1', 'Model2', 'Velocity', 'Periastron', 'Initial_Separation', 'Max_Density'])
+                 names=expected_columns, on_bad_lines='skip')
 
-# Convert Max_Density to float
-df['Max_Density'] = df['Max_Density'].astype(float)
+# Convert Max_Density to float, ensure other fields are correct
+df['Max_Density'] = pd.to_numeric(df['Max_Density'], errors='coerce')
+df = df.dropna()  # Drop rows with missing or invalid Max_Density
 
-# Pivot table to create a 2D grid for heatmap
-# We will plot Max_Density as a function of Velocity and Periastron
+# Pivot table to create a 2D grid for pcolormesh
 heatmap_data = df.pivot_table(index='Periastron', columns='Velocity', values='Max_Density', aggfunc="mean")
 
 # Check if the pivot table is empty
@@ -84,26 +85,25 @@ else:
     plt.rc('text', usetex=True)
     plt.rc('font', family='serif', size=20)  # Change 'size' to adjust the global font size
 
-    # Plot the heatmap with a homogeneous palette
-    plt.figure(figsize=(12, 10))
-    ax = sns.heatmap(heatmap_data, cmap="Reds", annot=False, linewidths=0.0,
-                     cbar_kws={"label": r'$\mathrm{Max\ density\ (g/cm^3)}$'})  # Simplified LaTeX syntax
+    # Extract X, Y, and Z data from the pivot table
+    X, Y = np.meshgrid(heatmap_data.columns, heatmap_data.index)
+    Z = heatmap_data.values
 
-    # Adjust the color bar label size
-    cbar = ax.collections[0].colorbar
-    cbar.set_label(r'$\mathrm{Max\ density\ (g/cm^3)}$', size=24)  # Adjust 'size' for the color bar label
+    # Plot using pcolormesh
+    plt.figure(figsize=(12, 12))
+    mesh = plt.pcolormesh(X, Y, Z, cmap='Reds', shading='auto', edgecolors='k', linewidth=0.01)
 
-    # Customize the color bar tick labels
-    cbar.ax.tick_params(labelsize=20)  # Adjust 'labelsize' to change the size of the tick labels
-
-    # Adjust the padding between the color bar and the plot
+    # Add a color bar
+    cbar = plt.colorbar(mesh)
+    cbar.set_label(r'$\mathrm{Max\ density\ (g/cm^3)}$', size=24)
+    cbar.ax.tick_params(labelsize=20)
     cbar.ax.yaxis.set_label_position('right')
-    cbar.ax.yaxis.labelpad = 15  # Increase the padding here, adjust value as needed
+    cbar.ax.yaxis.labelpad = 15  # Adjust padding between the color bar and the plot
 
     # Customize the axes labels with LaTeX and adjustable font size
-    plt.title(r'$\mathrm{Max\ Density\ as\ a\ function\ of\ velocity\ and\ periapsis\ distance}$', fontsize=24, pad=13)
     plt.xlabel(r'$\mathrm{Velocity\ (km/s)}$', fontsize=24)
-    plt.ylabel(r'$\mathrm{Periapsis\ distance\ (R_1\ +\ R_2)}$', fontsize=24)
+    plt.ylabel(r'$\mathrm{Periasis\ distance\ (R_1\ +\ R_2)}$', fontsize=24)
+    #plt.title(r'$\mathrm{Max\ Density\ as\ a\ function\ of\ velocity\ and\ periapsis\ distance}$', fontsize=24, pad=13)
 
     # Display the plot
     plt.show()
