@@ -1,5 +1,9 @@
 #!/bin/bash
 #
+# Script: run_simulations.sh
+# Author: Pau Amaro Seoane
+# Date: [Date]
+#
 # Description:
 # ------------
 # This script automates the process of running stellar collision simulations using various combinations
@@ -10,22 +14,21 @@
 # can access them directly. After the simulations are complete, the temporary files are removed, but the 
 # symbolic links to the stellar models remain in place.
 #
-# The user specifies the ranges for velocities, periastron separations, and initial separations. The script 
-# then calculates the total number of simulations based on these ranges and asks for user confirmation 
-# before proceeding.
+# The user specifies the ranges for velocities, periastron separations, and initial separations. 
+# If the user does not input any values, the script takes default values.
 #
 # The simulation is launched using the command:
-#     timeout 10 ../bin/triptych < ./input > ./LOG.dat
+#     timeout 3 ../bin/triptych < ./input > ./LOG.dat
 #
-# If the simulation runs for more than 4 seconds, it is terminated, and the script moves on to the next one.
+# If the simulation runs for more than 3 seconds, it is terminated, and the script moves on to the next one.
 #
 # The results are saved in the `./results.txt` file with the following format:
-#     Model1 | Model2 | Velocity (km/s) | Periastron | Initial Separation | Core Radius (R_sun) | Core Density (g/cm^3)
+#     Model1 | Model2 | Velocity (km/s) | Periastron | Initial Separation | Max Density (g/cm^3)
 #
 # Usage:
 # ------
 # 1. Make the script executable: `chmod +x run_simulations.sh`
-# 2. Run the script and specify the ranges for the parameters:
+# 2. Run the script and specify the ranges for the parameters, or use the default values:
 #    `./run_simulations.sh`
 #
 # Example:
@@ -52,16 +55,25 @@ done
 # Find all .mdl files in the current directory (linked models)
 models=($(ls *.mdl))
 
-# Get ranges from the user
-read -p "Enter the minimum velocity (km/s): " vel_min
-read -p "Enter the maximum velocity (km/s): " vel_max
-read -p "Enter the velocity step (km/s): " vel_step
-read -p "Enter the minimum periastron separation (e.g., 0.1): " peri_min
-read -p "Enter the maximum periastron separation (e.g., 0.7): " peri_max
-read -p "Enter the periastron step (e.g., 0.1): " peri_step
-read -p "Enter the minimum initial separation (e.g., 2): " sep_min
-read -p "Enter the maximum initial separation (e.g., 18): " sep_max
-read -p "Enter the initial separation step (e.g., 4): " sep_step
+# Function to prompt for user input with default values
+prompt_with_default() {
+    local prompt="$1"
+    local default="$2"
+    read -p "$prompt [$default]: " input
+    # If user provides input, use it; otherwise, use the default value
+    echo "${input:-$default}"
+}
+
+# Get ranges from the user or use default values
+vel_min=$(prompt_with_default "Enter the minimum velocity (km/s)" "1")
+vel_max=$(prompt_with_default "Enter the maximum velocity (km/s)" "7")
+vel_step=$(prompt_with_default "Enter the velocity step (km/s)" "0.5")
+peri_min=$(prompt_with_default "Enter the minimum periastron separation" "0.1")
+peri_max=$(prompt_with_default "Enter the maximum periastron separation" "0.7")
+peri_step=$(prompt_with_default "Enter the periastron step" "0.2")
+sep_min=$(prompt_with_default "Enter the minimum initial separation" "2")
+sep_max=$(prompt_with_default "Enter the maximum initial separation" "5")
+sep_step=$(prompt_with_default "Enter the initial separation step" "2")
 
 # Calculate the number of values for each parameter
 num_models=${#models[@]}
@@ -100,23 +112,21 @@ cat > $output_file <<- EOM
 # 3. Velocity: Relative velocity at infinity (in km/s).
 # 4. Periastron: Periastron separation (in units of R_1 + R_2).
 # 5. Initial Separation: Initial separation (normalized to the sum of the parent star radii).
-# 6. Core Radius: Radius at which the density starts to decrease significantly, indicating the core boundary (in R_sun).
-# 7. Core Density: Density at the core radius (in g/cm^3).
+# 6. Max Density: Maximum density in the simulation (in g/cm^3).
 #
 # Format:
-# Model 1 | Model 2 | Velocity (km/s) | Periastron | Initial Separation | Core Radius (R_sun) | Core Density (g/cm^3)
+# Model 1 | Model 2 | Velocity (km/s) | Periastron | Initial Separation | Max Density (g/cm^3)
 #
 EOM
 
-# Function to extract the core radius and density
-extract_core_properties() {
+# Function to extract the maximum density
+extract_max_density() {
     local product_file=$1
 
-    # Extract the core radius and density
-    core_radius=$(awk 'BEGIN {prev_rho = 0} $3 < prev_rho {print $4; exit} {prev_rho = $3}' $product_file)
-    core_density=$(awk -v rc=$core_radius '$4 == rc {print $3}' $product_file)
+    # Extract the maximum density from the second line, 3rd column of product file (skipping comment lines)
+    max_density=$(awk 'NR==2 {print $3}' $product_file)
 
-    echo "$core_radius $core_density"
+    echo "$max_density"
 }
 
 # Loop over all combinations of models, velocities, periastron separations, and initial separations
@@ -139,15 +149,15 @@ $initial_sep       ! initial separation, normalized to the sum of the parent sta
 'evolution.dat'    ! output data file name for evolution
 EOM
 
-                    # Run the simulation with a timeout of 4 seconds
-                    timeout 4 ../bin/triptych < $input_file > ./LOG.dat
+                    # Run the simulation with a timeout of 3 seconds
+                    timeout 3 ../bin/triptych < $input_file > ./LOG.dat
 
                     # Check if the simulation produced the product.dat file
                     if [ -f "product.dat" ]; then
-                        core_properties=$(extract_core_properties "product.dat")
-                        echo "$model1 $model2 $velocity $periastron_sep $initial_sep $core_properties" >> "$output_file"
+                        max_density=$(extract_max_density "product.dat")
+                        echo "$model1 $model2 $velocity $periastron_sep $initial_sep $max_density" >> "$output_file"
                     else
-                        echo "Simulation for $model1 $model2 with velocity $velocity km/s and periastron $periastron_sep failed (timeout or other issue)." >> "$output_file"
+                        echo "$model1 $model2 $velocity $periastron_sep $initial_sep Simulation failed (timeout or other issue)." >> "$output_file"
                     fi
 
                     # Clean up temporary files
