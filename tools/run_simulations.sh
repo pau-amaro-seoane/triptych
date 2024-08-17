@@ -1,9 +1,5 @@
 #!/bin/bash
 #
-# Script: run_simulations.sh
-# Author: Pau Amaro Seoane
-# Date: [Date]
-#
 # Description:
 # ------------
 # This script automates the process of running stellar collision simulations using various combinations

@@ -86,13 +86,25 @@ else:
 
     # Plot the heatmap with a homogeneous palette
     plt.figure(figsize=(12, 10))
-    sns.heatmap(heatmap_data, cmap="Reds", annot=False, linewidths=0.0,
-                cbar_kws={"label": r'$\mathrm{Max\ density\ (g/cm^3)}$'})  # Simplified LaTeX syntax
+    ax = sns.heatmap(heatmap_data, cmap="Reds", annot=False, linewidths=0.0,
+                     cbar_kws={"label": r'$\mathrm{Max\ density\ (g/cm^3)}$'})  # Simplified LaTeX syntax
+
+    # Adjust the color bar label size
+    cbar = ax.collections[0].colorbar
+    cbar.set_label(r'$\mathrm{Max\ density\ (g/cm^3)}$', size=24)  # Adjust 'size' for the color bar label
+
+    # Customize the color bar tick labels
+    cbar.ax.tick_params(labelsize=20)  # Adjust 'labelsize' to change the size of the tick labels
+
+    # Adjust the padding between the color bar and the plot
+    cbar.ax.yaxis.set_label_position('right')
+    cbar.ax.yaxis.labelpad = 15  # Increase the padding here, adjust value as needed
 
     # Customize the axes labels with LaTeX and adjustable font size
-    plt.title(r'$\mathrm{Max\ density\ as\ a\ function\ of\ velocity\ and\ periapsis\ distance}$', fontsize=24, pad=13)
+    plt.title(r'$\mathrm{Max\ Density\ as\ a\ function\ of\ velocity\ and\ periapsis\ distance}$', fontsize=24, pad=13)
     plt.xlabel(r'$\mathrm{Velocity\ (km/s)}$', fontsize=24)
     plt.ylabel(r'$\mathrm{Periapsis\ distance\ (R_1\ +\ R_2)}$', fontsize=24)
 
     # Display the plot
     plt.show()
+
