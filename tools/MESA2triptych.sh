@@ -25,37 +25,39 @@
 # -------
 # The output file is a triptych-compatible file with the following structure:
 #
-#   # 1:Enclosed mass m 
-#   # 2:Radius@m 
-#   # 3:Pressure@m 
-#   # 4:Density@m 
-#   # 5:H fraction chem. abundance by mass 
-#   # 6: Same metals 
-#   # 7: Same He3 
-#   # 8: Same C12 
-#   # 9: Same C13 
-#   # 10:Same N14 
-#   # 11:Same N15 
-#   # 12:Same O16 
-#   # 13:Same O17 
+#   # 1:Enclosed mass m
+#   # 2:Radius@m
+#   # 3:Pressure@m
+#   # 4:Density@m
+#   # 5:H fraction chem. abundance by mass
+#   # 6: Same metals
+#   # 7: Same He3
+#   # 8: Same C12
+#   # 9: Same C13
+#   # 10:Same N14
+#   # 11:Same N15
+#   # 12:Same O16
+#   # 13:Same O17
 #   # 14:Same O18
 #
 # The rows in the triptych file represent mass shells within the star, starting
-# from the center and moving outward.
+# from the center and moving outward. The script removes the first row in the
+# output file, as it typically contains a mass of zero, which could cause issues
+# in subsequent analyses.
 #
 # Procedure:
 # ----------
 # 1. **Remove the first six lines**: The script uses `tail -n +7` to skip the first
-#    six lines of the MESA input file. These lines typically contain headers or 
+#    six lines of the MESA input file. These lines typically contain headers or
 #    metadata that are not needed for the triptych format.
 #
-# 2. **Column Mapping**: The script extracts specific columns from the MESA file 
-#    and maps them to the corresponding columns in the triptych format:
+# 2. **Column Mapping and Conversion**: The script extracts specific columns from the MESA file
+#    and maps them to the corresponding columns in the triptych format. Specifically:
 #
 #    triptych Column   | MESA Column   | Description
 #    ================= | ============= | ====================================
-#    1: Enclosed mass  | Column 2      | Mass enclosed within the shell
-#    2: Radius@m       | Column 3      | Radius at the shell (converted from logR)
+#    1: Enclosed mass  | Column 2      | Mass enclosed within the shell, converted from solar masses to grams
+#    2: Radius@m       | Column 3      | Radius at the shell, converted from logR (10^(logR) in Rsun) to cm
 #    3: Pressure@m     | Column 6      | Pressure at the shell (converted from logP)
 #    4: Density@m      | Column 5      | Density at the shell (converted from logRho)
 #    5: H fraction     | Column 7      | Hydrogen fraction by mass
@@ -69,17 +71,24 @@
 #    13: O17 fraction  | Column 18     | Oxygen-17 fraction by mass
 #    14: O18 fraction  | Column 19     | Oxygen-18 fraction by mass
 #
-# 3. **Conversion of Logarithmic Values**: The MESA file typically stores some
-#    quantities, such as radius, pressure, and density, in logarithmic form 
-#    (logR, logP, logRho). The script converts these values back to their linear
-#    form using the expression 10^(log_value).
+# 3. **Conversion of Logarithmic Values and Mass**:
+#    - The MESA file typically stores some quantities, such as radius, pressure, and density, in logarithmic form
+#      (logR, logP, logRho). The script converts these values back to their linear form using the expression 10^(log_value).
+#    - The enclosed mass is converted from solar masses to grams using the conversion factor:
+#      1 solar mass = 1.98847e33 grams.
+#    - The radius is converted from Rsun to cm using the conversion factor:
+#      1 solar radius = 6.957e10 cm.
 #
-# 4. **Order Reversal**: The triptych format expects the data to start at the 
+# 4. **Order Reversal**: The triptych format expects the data to start at the
 #    center of the star and move outward. MESA files, however, might list data 
 #    from the surface inward. The script reverses the order of the lines using 
 #    the `tac` command to ensure that the triptych file starts at the star's center.
 #
-# 5. **Output**: The script writes the processed data to the specified output file,
+# 5. **Remove First Line**: The first line in the processed data, which usually 
+#    contains a mass of zero, is removed to avoid potential issues in further 
+#    analyses.
+#
+# 6. **Output**: The script writes the processed data to the specified output file,
 #    including a header that describes the columns. The output is formatted in
 #    scientific notation with eight decimal places for precision.
 #
@@ -95,7 +104,6 @@
 #
 # Notes:
 # ------
-#
 # - Ensure that the input file is properly formatted according to MESA's standards,
 #   with the relevant quantities located in the expected columns.
 # - This script assumes that the MESA file starts from the surface and moves inward.
@@ -153,28 +161,34 @@ fi
 input_file=$1
 output_file=$2
 
+# Define conversion factors
+msun_to_g=1.98847e33
+rsun_to_cm=6.957e10
+
 # Add header to the output file
 echo "# 1:Enclosed mass m 2:Radius@m 3:Pressure@m 4:Density@m 5:H fraction chem. abundance by mass 6: Same metals 7: Same He3 8: Same C12 9: Same C13 10:Same N14 11:Same N15 12:Same O16 13:Same O17 14:Same O18" > "$output_file"
 
 # Process the MESA file, skip the first 6 lines, reverse the order of lines, and convert the necessary values
-tail -n +7 "$input_file" | awk '{
-    mass = $2;
-    radius = 10^($3); 
-    pressure = 10^($6);
-    density = 10^($5);
-    h_fraction = $7;
-    metals = $9;
-    he3 = $11;
-    c12 = $13;
-    c13 = $14;
-    n14 = $15;
-    n15 = $16;
-    o16 = $17;
-    o17 = $18;
-    o18 = $19;
+tail -n +7 "$input_file" | awk -v msun_to_g="$msun_to_g" -v rsun_to_cm="$rsun_to_cm" '{
+    mass = $2 * msun_to_g;  # Convert from solar masses to grams
+    radius = 10^($3) * rsun_to_cm;  # Convert from logR in Rsun to cm
+    pressure = 10^($6);  # Convert from logP to pressure in cgs units (dyne/cm^2)
+    density = 10^($5);  # Convert from logRho to density in cgs units (g/cm^3)
+    h_fraction = $7;  # Hydrogen fraction by mass
+    metals = $9;  # Metals fraction by mass
+    he3 = $11;  # Helium-3 fraction by mass
+    c12 = $13;  # Carbon-12 fraction by mass
+    c13 = $14;  # Carbon-13 fraction by mass
+    n14 = $15;  # Nitrogen-14 fraction by mass
+    n15 = $16;  # Nitrogen-15 fraction by mass
+    o16 = $17;  # Oxygen-16 fraction by mass
+    o17 = $18;  # Oxygen-17 fraction by mass
+    o18 = $19;  # Oxygen-18 fraction by mass
     
+    # Print the converted values in scientific notation
     printf("%.8e %.8e %.8e %.8e %.8e %.8e %.8e %.8e %.8e %.8e %.8e %.8e %.8e %.8e\n", 
         mass, radius, pressure, density, h_fraction, metals, he3, c12, c13, n14, n15, o16, o17, o18);
-}' | tac >> "$output_file"
+}' | tac | tail -n +2 >> "$output_file"  # Reverse the order and remove the first line
 
 echo "Conversion complete. Output saved to $output_file."
+
