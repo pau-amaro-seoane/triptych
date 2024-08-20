@@ -1,7 +1,3 @@
-import pandas as pd
-import matplotlib.pyplot as plt
-import numpy as np
-
 """
 Program: plot_density.py
 Author: Pau Amaro Seoane
@@ -65,6 +61,10 @@ in the script.
 - Axes and Labels: The script can be further customized to plot different parameters by adjusting 
 the pivot table creation or the heatmap plotting sections.
 """
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+
 
 # Define the expected number of columns
 expected_columns = ['Model1', 'Model2', 'Velocity', 'Periastron', 'Initial_Separation', 'Max_Density']
@@ -101,7 +101,7 @@ else:
     if plot_method == '1':
         mesh = plt.pcolormesh(X, Y, Z, cmap='Reds', edgecolors='none', shading='gouraud', linewidth=0.0)
     elif plot_method == '2':
-        plt.imshow(Z, cmap='Reds', extent=(X.min(), X.max(), Y.min(), Y.max()), origin='lower', interpolation='bilinear', aspect='auto')
+        plt.imshow(Z, cmap='Reds', extent=(X.min(), X.max(), Y.min(), Y.max()), origin='lower', interpolation='bicubic', aspect='auto')
         mesh = None  # No mesh for imshow, colorbar will be generated without mesh reference
     else:
         print("Invalid choice. Defaulting to pcolormesh.")
