@@ -60,6 +60,34 @@ within the plot. If LaTeX is not installed, remove or comment out the LaTeX-rela
 in the script.
 - Axes and Labels: The script can be further customized to plot different parameters by adjusting 
 the pivot table creation or the heatmap plotting sections.
+
+Interpolation Methods for Smoothing in imshow:
+----------------------------------------------
+
+The `imshow` function in Matplotlib allows for various interpolation methods
+that can control the smoothness of the image. The `interpolation` parameter can
+be adjusted to increase or decrease the smoothness of the heatmap. Below are
+some common options:
+
+1. 'nearest': No interpolation, each pixel is displayed as a small square of one color.
+2. 'bilinear': Linear interpolation in both x and y directions. Provides moderate smoothing.
+3. 'bicubic': Cubic interpolation in both x and y directions. This is a good default for smooth transitions.
+4. 'lanczos': Applies the Lanczos filter, which is known for producing very smooth results, particularly effective for downsampling.
+5. 'spline16', 'spline36': Spline interpolation with different degrees, offering various levels of smoothness.
+6. 'hanning', 'hamming', 'kaiser': Apply different window functions for interpolation, which can result in smooth transitions.
+
+The script uses 'bicubic' for a balance between smoothness and performance, but
+you can increase the smoothing by using 'lanczos' or other interpolation
+methods depending on your needs.
+
+Example Usage:
+--------------
+
+To apply a smoother interpolation, such as 'lanczos', replace the interpolation
+parameter in the `imshow` function like this:
+
+plt.imshow(Z, cmap='Reds', extent=(X.min(), X.max(), Y.min(), Y.max()), origin='lower', interpolation='lanczos', aspect='auto')
+
 """
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -101,7 +129,7 @@ else:
     if plot_method == '1':
         mesh = plt.pcolormesh(X, Y, Z, cmap='Reds', edgecolors='none', shading='gouraud', linewidth=0.0)
     elif plot_method == '2':
-        plt.imshow(Z, cmap='Reds', extent=(X.min(), X.max(), Y.min(), Y.max()), origin='lower', interpolation='bicubic', aspect='auto')
+        plt.imshow(Z, cmap='Reds', extent=(X.min(), X.max(), Y.min(), Y.max()), origin='lower', interpolation='spline36', aspect='auto')
         mesh = None  # No mesh for imshow, colorbar will be generated without mesh reference
     else:
         print("Invalid choice. Defaulting to pcolormesh.")
