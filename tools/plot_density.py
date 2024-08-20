@@ -1,3 +1,7 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+
 """
 Program: plot_density.py
 Author: Pau Amaro Seoane
@@ -44,11 +48,7 @@ Usage:
 
     $ python plot_density.py
 
-3. The script will prompt you to choose between two plotting methods:
-   - `pcolormesh`: Generates a plot with distinct color blocks.
-   - `imshow`: Generates a plot with smooth color transitions.
-
-4. The heatmap will be displayed, showing maximum core density as a function of the chosen parameters. 
+3. The heatmap will be displayed, showing maximum core density as a function of the chosen parameters. 
 The plot can be customized by editing the script, such as changing font sizes or plot dimensions.
 
 Customization:
@@ -63,11 +63,8 @@ the pivot table creation or the heatmap plotting sections.
 
 Interpolation Methods for Smoothing in imshow:
 ----------------------------------------------
-
-The `imshow` function in Matplotlib allows for various interpolation methods
-that can control the smoothness of the image. The `interpolation` parameter can
-be adjusted to increase or decrease the smoothness of the heatmap. Below are
-some common options:
+The `imshow` function in Matplotlib allows for various interpolation methods that can control the smoothness of the image. 
+The `interpolation` parameter can be adjusted to increase or decrease the smoothness of the heatmap. Below are some common options:
 
 1. 'nearest': No interpolation, each pixel is displayed as a small square of one color.
 2. 'bilinear': Linear interpolation in both x and y directions. Provides moderate smoothing.
@@ -76,23 +73,16 @@ some common options:
 5. 'spline16', 'spline36': Spline interpolation with different degrees, offering various levels of smoothness.
 6. 'hanning', 'hamming', 'kaiser': Apply different window functions for interpolation, which can result in smooth transitions.
 
-The script uses 'bicubic' for a balance between smoothness and performance, but
-you can increase the smoothing by using 'lanczos' or other interpolation
-methods depending on your needs.
+The script uses 'bicubic' for a balance between smoothness and performance, but you can increase the smoothing by using 'lanczos' or other interpolation methods depending on your needs.
 
 Example Usage:
 --------------
-
-To apply a smoother interpolation, such as 'lanczos', replace the interpolation
-parameter in the `imshow` function like this:
+To apply a smoother interpolation, such as 'lanczos', replace the interpolation parameter in the `imshow` function like this:
 
 plt.imshow(Z, cmap='Reds', extent=(X.min(), X.max(), Y.min(), Y.max()), origin='lower', interpolation='lanczos', aspect='auto')
 
+Experiment with different methods to achieve the desired level of smoothness for your plot.
 """
-import pandas as pd
-import matplotlib.pyplot as plt
-import numpy as np
-
 
 # Define the expected number of columns
 expected_columns = ['Model1', 'Model2', 'Velocity', 'Periastron', 'Initial_Separation', 'Max_Density']
@@ -105,7 +95,7 @@ df = pd.read_csv('./results.txt', delim_whitespace=True, comment='#',
 df['Max_Density'] = pd.to_numeric(df['Max_Density'], errors='coerce')
 df = df.dropna()  # Drop rows with missing or invalid Max_Density
 
-# Pivot table to create a 2D grid for pcolormesh or imshow
+# Pivot table to create a 2D grid for pcolormesh
 heatmap_data = df.pivot_table(index='Periastron', columns='Velocity', values='Max_Density', aggfunc="mean")
 
 # Check if the pivot table is empty
@@ -113,7 +103,38 @@ if heatmap_data.empty:
     print("Error: No data available for plotting. The pivot table is empty.")
 else:
     # Ask the user to choose the plotting method
-    plot_method = input("Choose plotting method: (1) pcolormesh (distinct color blocks) or (2) imshow (smooth transitions): ")
+    plot_method = input("Choose the plotting method:\n(1) pcolormesh (discrete color transitions)\n(2) imshow (smooth color transitions)\nEnter your choice (1 or 2): ")
+
+    interpolation_method = None
+    if plot_method == '2':
+        # Ask the user to choose the interpolation method for imshow
+        interpolation_method = input(
+            "Choose the interpolation method for imshow:\n"
+            "(1) nearest: No interpolation, sharp pixels\n"
+            "(2) bilinear: Linear interpolation, moderate smoothness\n"
+            "(3) bicubic: Cubic interpolation, good smoothness\n"
+            "(4) lanczos: Lanczos filter, very smooth\n"
+            "(5) spline16: Spline interpolation, degree 16\n"
+            "(6) spline36: Spline interpolation, degree 36\n"
+            "(7) hanning: Hanning window function\n"
+            "(8) hamming: Hamming window function\n"
+            "(9) kaiser: Kaiser window function\n"
+            "Enter your choice (1-9): "
+        )
+
+        interpolation_map = {
+            '1': 'nearest',
+            '2': 'bilinear',
+            '3': 'bicubic',
+            '4': 'lanczos',
+            '5': 'spline16',
+            '6': 'spline36',
+            '7': 'hanning',
+            '8': 'hamming',
+            '9': 'kaiser'
+        }
+
+        interpolation_method = interpolation_map.get(interpolation_method, 'bicubic')
 
     # Set up LaTeX for rendering
     plt.rc('text', usetex=True)
@@ -125,18 +146,22 @@ else:
 
     # Plot based on user's choice
     plt.figure(figsize=(13, 8))  # Adjust the figure size to better balance the axes
-    
+
     if plot_method == '1':
         mesh = plt.pcolormesh(X, Y, Z, cmap='Reds', edgecolors='none', shading='gouraud', linewidth=0.0)
     elif plot_method == '2':
-        plt.imshow(Z, cmap='Reds', extent=(X.min(), X.max(), Y.min(), Y.max()), origin='lower', interpolation='spline36', aspect='auto')
+        plt.imshow(Z, cmap='Reds', extent=(X.min(), X.max(), Y.min(), Y.max()), origin='lower', interpolation=interpolation_method, aspect='auto')
         mesh = None  # No mesh for imshow, colorbar will be generated without mesh reference
     else:
         print("Invalid choice. Defaulting to pcolormesh.")
         mesh = plt.pcolormesh(X, Y, Z, cmap='Reds', edgecolors='none', shading='gouraud', linewidth=0.0)
-    
+
     # Add a color bar
-    cbar = plt.colorbar(mesh if mesh is not None else plt.gca().images[-1])
+    if mesh:
+        cbar = plt.colorbar(mesh)
+    else:
+        cbar = plt.colorbar()
+
     cbar.set_label(r'$\mathrm{Max\ density\ (g/cm^3)}$', size=24)
     cbar.ax.tick_params(labelsize=20)
     cbar.ax.yaxis.set_label_position('right')
@@ -144,7 +169,7 @@ else:
 
     # Customize the axes labels with LaTeX and adjustable font size
     plt.xlabel(r'$\mathrm{Velocity\ (km/s)}$', fontsize=24)
-    plt.ylabel(r'$\mathrm{Periastron\ distance\ (R_1\ +\ R_2)}$', fontsize=24)
+    plt.ylabel(r'$\mathrm{Periastron\ distance\ (R_1\ +\ R_2)\,R_{\odot}}$', fontsize=24)
 
     # Display the plot
     plt.show()
