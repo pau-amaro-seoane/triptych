@@ -1,3 +1,7 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+
 """
 Program: plot_density.py
 Author: Pau Amaro Seoane
@@ -21,13 +25,11 @@ Requirements:
 1. Python 3.x
 2. Required Python libraries:
    - pandas: For handling and processing the data.
-   - seaborn: For generating the heatmap.
    - matplotlib: For plotting and LaTeX rendering.
 
    These can be installed via pip:
 
-   $ pip install pandas seaborn matplotlib
-
+   $ pip install pandas matplotlib
 
 3. A 'results.txt' file in the current directory. This file should be structured as follows:
 - Model1: Stellar model for the first star.
@@ -46,7 +48,11 @@ Usage:
 
     $ python plot_density.py
 
-3. The heatmap will be displayed, showing maximum core density as a function of the chosen parameters. 
+3. The script will prompt you to choose between two plotting methods:
+   - `pcolormesh`: Generates a plot with distinct color blocks.
+   - `imshow`: Generates a plot with smooth color transitions.
+
+4. The heatmap will be displayed, showing maximum core density as a function of the chosen parameters. 
 The plot can be customized by editing the script, such as changing font sizes or plot dimensions.
 
 Customization:
@@ -59,9 +65,6 @@ in the script.
 - Axes and Labels: The script can be further customized to plot different parameters by adjusting 
 the pivot table creation or the heatmap plotting sections.
 """
-import pandas as pd
-import matplotlib.pyplot as plt
-import numpy as np
 
 # Define the expected number of columns
 expected_columns = ['Model1', 'Model2', 'Velocity', 'Periastron', 'Initial_Separation', 'Max_Density']
@@ -74,13 +77,16 @@ df = pd.read_csv('./results.txt', delim_whitespace=True, comment='#',
 df['Max_Density'] = pd.to_numeric(df['Max_Density'], errors='coerce')
 df = df.dropna()  # Drop rows with missing or invalid Max_Density
 
-# Pivot table to create a 2D grid for pcolormesh
+# Pivot table to create a 2D grid for pcolormesh or imshow
 heatmap_data = df.pivot_table(index='Periastron', columns='Velocity', values='Max_Density', aggfunc="mean")
 
 # Check if the pivot table is empty
 if heatmap_data.empty:
     print("Error: No data available for plotting. The pivot table is empty.")
 else:
+    # Ask the user to choose the plotting method
+    plot_method = input("Choose plotting method: (1) pcolormesh (distinct color blocks) or (2) imshow (smooth transitions): ")
+
     # Set up LaTeX for rendering
     plt.rc('text', usetex=True)
     plt.rc('font', family='serif', size=20)  # Change 'size' to adjust the global font size
@@ -89,12 +95,20 @@ else:
     X, Y = np.meshgrid(heatmap_data.columns, heatmap_data.index)
     Z = heatmap_data.values
 
-    # Plot using pcolormesh
-    plt.figure(figsize=(12, 12))
-    mesh = plt.pcolormesh(X, Y, Z, cmap='Reds', shading='auto', edgecolors='k', linewidth=0.01)
-
+    # Plot based on user's choice
+    plt.figure(figsize=(13, 8))  # Adjust the figure size to better balance the axes
+    
+    if plot_method == '1':
+        mesh = plt.pcolormesh(X, Y, Z, cmap='Reds', edgecolors='none', shading='gouraud', linewidth=0.0)
+    elif plot_method == '2':
+        plt.imshow(Z, cmap='Reds', extent=(X.min(), X.max(), Y.min(), Y.max()), origin='lower', interpolation='bilinear', aspect='auto')
+        mesh = None  # No mesh for imshow, colorbar will be generated without mesh reference
+    else:
+        print("Invalid choice. Defaulting to pcolormesh.")
+        mesh = plt.pcolormesh(X, Y, Z, cmap='Reds', edgecolors='none', shading='gouraud', linewidth=0.0)
+    
     # Add a color bar
-    cbar = plt.colorbar(mesh)
+    cbar = plt.colorbar(mesh if mesh is not None else plt.gca().images[-1])
     cbar.set_label(r'$\mathrm{Max\ density\ (g/cm^3)}$', size=24)
     cbar.ax.tick_params(labelsize=20)
     cbar.ax.yaxis.set_label_position('right')
@@ -102,8 +116,7 @@ else:
 
     # Customize the axes labels with LaTeX and adjustable font size
     plt.xlabel(r'$\mathrm{Velocity\ (km/s)}$', fontsize=24)
-    plt.ylabel(r'$\mathrm{Periasis\ distance\ (R_1\ +\ R_2)}$', fontsize=24)
-    #plt.title(r'$\mathrm{Max\ Density\ as\ a\ function\ of\ velocity\ and\ periapsis\ distance}$', fontsize=24, pad=13)
+    plt.ylabel(r'$\mathrm{Periastron\ distance\ (R_1\ +\ R_2)}$', fontsize=24)
 
     # Display the plot
     plt.show()
