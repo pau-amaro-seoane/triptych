@@ -53,13 +53,10 @@ The plot can be customized by editing the script, such as changing font sizes or
 
 Customization:
 --------------
-- Font Size: You can adjust the font size for labels and annotations by modifying the `fontsize` 
-and `annot_kws` parameters in the script.
+- Font Size: You can adjust the font size for labels, ticks, titles, and annotations by providing input when prompted.
 - LaTeX Rendering: Ensure that LaTeX is installed on your system for proper rendering of text 
 within the plot. If LaTeX is not installed, remove or comment out the LaTeX-related lines 
 in the script.
-- Axes and Labels: The script can be further customized to plot different parameters by adjusting 
-the pivot table creation or the heatmap plotting sections.
 
 Interpolation Methods for Smoothing in imshow:
 ----------------------------------------------
@@ -97,6 +94,12 @@ df = df.dropna()  # Drop rows with missing or invalid Max_Density
 
 # Pivot table to create a 2D grid for pcolormesh
 heatmap_data = df.pivot_table(index='Periastron', columns='Velocity', values='Max_Density', aggfunc="mean")
+
+# Prompt the user for font sizes
+label_fontsize = int(input("Enter font size for labels (default 24): ") or "24")
+tick_fontsize = int(input("Enter font size for tick labels (default 20): ") or "20")
+title_fontsize = int(input("Enter font size for title (default 24): ") or "24")
+colorbar_fontsize = int(input("Enter font size for colorbar label (default 24): ") or "24")
 
 # Check if the pivot table is empty
 if heatmap_data.empty:
@@ -138,7 +141,7 @@ else:
 
     # Set up LaTeX for rendering
     plt.rc('text', usetex=True)
-    plt.rc('font', family='serif', size=20)  # Change 'size' to adjust the global font size
+    plt.rc('font', family='serif', size=label_fontsize)  # Apply user-defined font size for labels
 
     # Extract X, Y, and Z data from the pivot table
     X, Y = np.meshgrid(heatmap_data.columns, heatmap_data.index)
@@ -162,14 +165,17 @@ else:
     else:
         cbar = plt.colorbar()
 
-    cbar.set_label(r'$\mathrm{Max\ density\ (g/cm^3)}$', size=24)
-    cbar.ax.tick_params(labelsize=20)
+    cbar.set_label(r'$\mathrm{Max\ density\ (g/cm^3)}$', size=colorbar_fontsize)
+    cbar.ax.tick_params(labelsize=tick_fontsize)
     cbar.ax.yaxis.set_label_position('right')
     cbar.ax.yaxis.labelpad = 15  # Adjust padding between the color bar and the plot
 
-    # Customize the axes labels with LaTeX and adjustable font size
-    plt.xlabel(r'$\mathrm{Velocity\ (km/s)}$', fontsize=24)
-    plt.ylabel(r'$\mathrm{Periastron\ distance\ (R_1\ +\ R_2)\,R_{\odot}}$', fontsize=24)
+    # Customize the axes labels with LaTeX and user-defined font size
+    plt.xlabel(r'$\mathrm{Velocity\ (km/s)}$', fontsize=label_fontsize)
+    plt.ylabel(r'$\mathrm{Periastron\ distance\ (R_1\ +\ R_2)\,R_{\odot}}$', fontsize=label_fontsize, labelpad=12)
+
+    # Optionally, you could add a title
+    #plt.title(r'$\mathrm{Max\ Density\ as\ a\ function\ of\ velocity\ and\ periastron\ distance}$', fontsize=title_fontsize, pad=20)
 
     # Display the plot
     plt.show()
