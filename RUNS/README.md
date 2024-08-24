@@ -1,4 +1,4 @@
-1- Copy the stellar models you need from the upper folder here
-2- Modify input 
-3- Execute ./run.sh
-4- If not happy, clean with ./clean.sh
+- Copy the stellar models you need from the upper folder here
+- Modify input 
+- Execute `./run.sh`
+- If not happy, clean with `./clean.sh`
